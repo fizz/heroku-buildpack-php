@@ -66,7 +66,7 @@ BUILDPACK_BRANCH=${BUILDPACK_BRANCH:-master}
 if [[ "$BUILDPACK_BRANCH" != v* && "$BUILDPACK_BRANCH" != "master" ]]; then
     S3_URL="develop"
 fi
-S3_URL="https://lang-php.s3.amazonaws.com/dist-${STACK}-${S3_URL:-"master"}"
+S3_URL="https://golffuel-buildpacks.s3.amazonaws.com/dist-${STACK}-${S3_URL:-"master"}"
 RTVS_URL="https://php-runtime-version-selector.herokuapp.com"
 
 cd $BUILD_DIR
@@ -115,7 +115,7 @@ re-generate '$COMPOSER_LOCK' if necessary, and commit it into your
 repository. For more information, please refer to the docs at
 https://devcenter.heroku.com/articles/php-support#activation"
     fi
-    
+
     solver_payload=$(echo -n "$runtimes" | python -c '
 import sys, json
 ret = {}
@@ -139,7 +139,7 @@ It is recommended that you always use stability flags instead,
 even if you have 'prefer-stable' enabled. For more information,
 see https://getcomposer.org/doc/01-basic-usage.md#stability"
     fi
-    
+
     solver_result=$(echo -n "$solver_payload" | curl --silent --location --fail -H'Content-Type: application/json' -H"X-Build-Request-Id: ${REQUEST_ID:-}" -d @- "${RTVS_URL}/resolve?default_runtime=php") || error "Failed to resolve runtime requirements.
 If the issue persists, please contact support."
     while IFS="|" read runtime_name runtime_source runtime_constraint runtime_result; do
@@ -236,7 +236,7 @@ cp $BP_DIR/conf/apache2/httpd.conf.default $BUILD_DIR/.heroku/php/etc/apache2/ht
 mkdir -p $BUILD_DIR/.heroku/php/.versions/apache2
 echo $APACHE_VERSION > $BUILD_DIR/.heroku/php/.versions/apache2/apache2
 
-NGINX_VERSION="1.6.0"
+NGINX_VERSION="1.9.4"
 NGINX_DIST_URL="$S3_URL/nginx-$NGINX_VERSION.tar.gz"
 echo "- Nginx $NGINX_VERSION" | indent
 curl --silent --location "$NGINX_DIST_URL" | tar xz -C $BUILD_DIR/.heroku/php
@@ -249,12 +249,12 @@ echo $NGINX_VERSION > $BUILD_DIR/.heroku/php/.versions/nginx/nginx
 # handle extensions for PHP
 if [[ "${PHP_VERSION}" ]]; then
     status "Installing PHP extensions..."
-    
+
     php() {
         # the newrelic extension logs to stderr which pollutes our build output on each invocation of PHP, the daemon it launches will prevent the build from finishing, and each call to PHP would be logged to NR as non-web traffic, so we disable it for the duration of this build
         `which php` -dnewrelic.enabled=0 -dnewrelic.loglevel=error -dnewrelic.daemon.dont_launch=3 -dnewrelic.daemon.loglevel=error "$@"
     }
-    
+
     exts=()
     if [[ -f "$COMPOSER_LOCK" ]]; then
         exts=($(cat "$COMPOSER_LOCK" | python -c 'import sys, json, itertools; l=json.load(sys.stdin); print "\n".join(list(set(itertools.chain([plat[4:].lower() for plat in l.get("platform", []) if plat.startswith("ext-")], *[ [ pkg[4:].lower() for pkg in p.get("require", []) if pkg.startswith("ext-") ] for p in l.get("packages", []) ]))))' 2> /dev/null || true)) # convert to array
@@ -266,7 +266,7 @@ if [[ "${PHP_VERSION}" ]]; then
     for ext in "${!exts[@]}"; do # loop over keys in case the array is empty or else it'll error out
         install_ext "${exts[$ext]}" $ext_source
     done
-    
+
     # special treatment for New Relic; we enable it if we detect a license key for it
     install_newrelic_ext
 
