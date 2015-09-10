@@ -19,6 +19,7 @@ echo "-----> Building Nginx ${dep_version}..."
 curl -L ${dep_url} | tar xz
 curl -L http://zlib.net/zlib-1.2.8.tar.gz | tar xz -C ${dep_dirname}
 curl -L http://sourceforge.net/projects/pcre/files/pcre/8.34/pcre-8.34.tar.gz | tar xz -C ${dep_dirname}
+git clone https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git ${dep_dirname}/ngx_http_substitutions_filter_module
 
 pushd ${dep_dirname}
 ETC=${OUT_PREFIX}/etc
